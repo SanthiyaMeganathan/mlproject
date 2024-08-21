@@ -1,0 +1,71 @@
+import numpy as np
+
+def more_general(h1, h2):
+    """
+    Check if hypothesis h1 is more general than hypothesis h2
+    """
+    more_general_parts = []
+    for x, y in zip(h1, h2):
+        mg = x == "?" or (x != "0" and (x == y or y == "0"))
+        more_general_parts.append(mg)
+    return all(more_general_parts)
+
+def candidate_elimination_algorithm(training_examples):
+    """
+    Implementation of Candidate Elimination Algorithm
+    """
+    # Initialize S and G
+    S = list(training_examples[0][:-1])  # Start with the first positive example as a list
+    G = [["?" for _ in range(len(S))]]  # Start with the most general hypothesis
+
+    # Iterate through all training examples
+    for example in training_examples:
+        inputs, output = example[:-1], example[-1]
+        
+        if output == "Yes":  # Positive example
+            # Remove inconsistent hypotheses from G
+            G = [g for g in G if more_general(g, inputs)]
+            # Generalize S to be consistent with the example
+            for i, s in enumerate(S):
+                if inputs[i] != s:
+                    S[i] = "?"
+        
+        elif output == "No":  # Negative example
+            # Remove inconsistent hypotheses from S
+            S = [s for s in [S] if not more_general(s, inputs)]
+            # Specialize G to be consistent with the example
+            G_new = []
+            for g in G:
+                for i in range(len(g)):
+                    if g[i] == "?":
+                        for val in np.unique([example[i] for example in training_examples]):
+                            if val != inputs[i]:
+                                g_new = g.copy()
+                                g_new[i] = val
+                                G_new.append(g_new)
+            G = G_new
+    
+    return S, G
+
+# Example usage
+# Training data: Each example is a tuple with attributes followed by the class label (Yes/No)
+training_data = [
+    ('Sunny', 'Warm', 'Normal', 'Strong', 'Warm', 'Same', 'Yes'),
+    ('Sunny', 'Warm', 'High', 'Strong', 'Warm', 'Same', 'Yes'),
+    ('Rainy', 'Cold', 'High', 'Strong', 'Warm', 'Change', 'No'),
+    ('Sunny', 'Warm', 'High', 'Strong', 'Cool', 'Change', 'Yes')
+]
+
+S, G = candidate_elimination_algorithm(training_data)
+
+print(f"Final Specific Hypothesis: {S}")
+print(f"Final General Hypothesis: {G}")
+
+
+
+
+
+output:
+
+Final Specific Hypothesis: ['?']
+Final General Hypothesis: [['Sunny', '?', '?', '?', '?', '?'], ['?', 'Warm', '?', '?', '?', '?'], ['?', '?', '?', '?', 'Cool', '?']]
